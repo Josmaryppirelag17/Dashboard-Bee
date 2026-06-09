@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#faf6ee"/>
+      <stop offset="60%" stop-color="#f9f5ec"/>
+      <stop offset="100%" stop-color="#faf6ee"/>
+    </linearGradient>
+    <linearGradient id="hexGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e28800"/>
+      <stop offset="100%" stop-color="#faa715"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Background hexagons -->
+  <g opacity="0.04">
+    <path d="M 100 250 L 140 227 L 180 250 L 180 297 L 140 320 L 100 297 Z" fill="#e28800"/>
+    <path d="M 220 210 L 260 187 L 300 210 L 300 257 L 260 280 L 220 257 Z" fill="#e28800"/>
+    <path d="M 340 250 L 380 227 L 420 250 L 420 297 L 380 320 L 340 297 Z" fill="#e28800"/>
+    <path d="M 800 200 L 855 170 L 910 200 L 910 260 L 855 290 L 800 260 Z" fill="#e28800"/>
+    <path d="M 920 230 L 975 200 L 1030 230 L 1030 290 L 975 320 L 920 290 Z" fill="#e28800"/>
+    <path d="M 740 280 L 795 250 L 850 280 L 850 340 L 795 370 L 740 340 Z" fill="#e28800"/>
+    <path d="M 50 370 L 90 347 L 130 370 L 130 417 L 90 440 L 50 417 Z" fill="#e28800"/>
+    <path d="M 1050 350 L 1090 327 L 1130 350 L 1130 397 L 1090 420 L 1050 397 Z" fill="#e28800"/>
+  </g>
+
+  <!-- Center hexagon icon -->
+  <g transform="translate(600, 270)">
+    <path d="M 0 -120 L 104 -60 L 104 60 L 0 120 L -104 60 L -104 -60 Z" fill="none" stroke="url(#hexGrad)" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M 0 -120 L 0 0 L -104 60" fill="none" stroke="url(#hexGrad)" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 0 -120 L 0 0 L 104 60" fill="none" stroke="url(#hexGrad)" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 0 120 L 0 0 L -104 60" fill="none" stroke="url(#hexGrad)" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 0 120 L 0 0 L 104 60" fill="none" stroke="url(#hexGrad)" stroke-width="4" stroke-linejoin="round"/>
+
+    <!-- Inner hex -->
+    <path d="M 0 -80 L 69 -40 L 69 40 L 0 80 L -69 40 L -69 -40 Z" fill="url(#hexGrad)" opacity="0.9"/>
+    <text x="0" y="8" font-family="Inter, sans-serif" font-size="44" font-weight="900" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">BH</text>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="450" font-family="Inter, sans-serif" font-size="64" font-weight="900" fill="#100f0d" text-anchor="middle" letter-spacing="-1">
+    BeeHive
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="500" font-family="Inter, sans-serif" font-size="26" font-weight="700" fill="#e28800" text-anchor="middle" letter-spacing="4">
+    PRODUCTIVITY DASHBOARD
+  </text>
+
+  <!-- Tagline -->
+  <text x="600" y="545" font-family="Inter, sans-serif" font-size="16" font-weight="500" fill="#5c5449" text-anchor="middle">
+    Pomodoro · Kanban · Gamificación · Sesiones sin login · XP por misiones
+  </text>
+
+  <!-- Decorative dashed line -->
+  <line x1="300" y1="560" x2="900" y2="560" stroke="#ebdcb9" stroke-width="1" stroke-dasharray="6 4"/>
+
+  <!-- Footer -->
+  <text x="600" y="595" font-family="Inter, sans-serif" font-size="14" font-weight="600" fill="#5c5449" text-anchor="middle">
+    Next.js · React 19 · TypeScript · Zustand · IndexedDB · Tailwind CSS
+  </text>
+</svg>

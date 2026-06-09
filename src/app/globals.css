@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --color-amber-honey: #e28800;
+  --color-honey-gold: #faa715;
+  --color-cream-bg: #faf6ee;
+  --color-obsidian-text: #100f0d;
+  --color-wheat-subtext: #5c5449;
+  --color-border-soft: #ebdcb9;
+  --color-success-fern: #15803d;
+  --color-hazard-rose: #b91c1c;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(18, 20, 26, 0.5);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.25);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.5);
+}
+
+/* ── CLS fix: explicit bounds for media elements ── */
+img, svg, video, iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Respect user motion preferences ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── LCP: content-visibility for below-fold sections ── */
+[data-cv="auto"] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
