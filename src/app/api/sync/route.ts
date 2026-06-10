@@ -1,23 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/connection";
 import { tasks as tasksSchema, userStats } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  apiSuccess,
+  handleApiError,
+  dbNotConfiguredResponse,
+  unauthorizedResponse,
+  requireUser,
+  mapTask,
+  mapStats,
+} from "../auth/shared";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    const user = await requireUser();
+    if (!user) return unauthorizedResponse();
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json(
-        { success: false, error: "Database not configured" },
-        { status: 503 },
-      );
-    }
+    if (!db) return dbNotConfiguredResponse();
 
     const body = await request.json();
     const { tasks: localTasks, stats: localStats } = body;
@@ -46,22 +47,13 @@ export async function POST(request: NextRequest) {
 
     if (localStats && typeof localStats === "object") {
       const statsUpdate: Record<string, unknown> = {};
-      const stringFields = [
-        "weeklyFocusMins",
-        "weeklyTasksCompleted",
-        "unlockedAchievements",
-        "claimedQuests",
-      ];
+      const stringFields = ["weeklyFocusMins", "weeklyTasksCompleted", "unlockedAchievements", "claimedQuests"];
       for (const key of stringFields) {
-        if (localStats[key] !== undefined) {
-          statsUpdate[key] = JSON.stringify(localStats[key]);
-        }
+        if (localStats[key] !== undefined) statsUpdate[key] = JSON.stringify(localStats[key]);
       }
       const directFields = ["xp", "level", "totalFocusMins", "streakCount", "userBeeName"];
       for (const key of directFields) {
-        if (localStats[key] !== undefined) {
-          statsUpdate[key] = localStats[key];
-        }
+        if (localStats[key] !== undefined) statsUpdate[key] = localStats[key];
       }
 
       if (Object.keys(statsUpdate).length > 0) {
@@ -83,46 +75,17 @@ export async function POST(request: NextRequest) {
     }
 
     const cloudTasks = await db.select().from(tasksSchema).where(eq(tasksSchema.userId, user.id));
-
     const [cloudStats] = await db
       .select()
       .from(userStats)
       .where(eq(userStats.userId, user.id))
       .limit(1);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        tasks: cloudTasks.map((r) => ({
-          id: r.taskId,
-          title: r.title,
-          completed: r.completed ?? false,
-          priority: r.priority as "LOW" | "MEDIUM" | "HIGH",
-          category: r.category ?? "",
-          pollenUnits: r.pollenUnits ?? 1,
-          columnId: r.columnId as "todo" | "in_progress" | "completed",
-          notes: r.notes ?? undefined,
-          dueDate: r.dueDate ?? undefined,
-        })),
-        stats: cloudStats
-          ? {
-              xp: cloudStats.xp ?? 0,
-              level: cloudStats.level ?? 1,
-              totalFocusMins: cloudStats.totalFocusMins ?? 0,
-              streakCount: cloudStats.streakCount ?? 0,
-              weeklyFocusMins: JSON.parse(cloudStats.weeklyFocusMins ?? "[0,0,0,0,0,0,0]"),
-              weeklyTasksCompleted: JSON.parse(
-                cloudStats.weeklyTasksCompleted ?? "[0,0,0,0,0,0,0]",
-              ),
-              userBeeName: cloudStats.userBeeName ?? "",
-              unlockedAchievements: JSON.parse(cloudStats.unlockedAchievements ?? "[]"),
-              claimedQuests: JSON.parse(cloudStats.claimedQuests ?? "[]"),
-            }
-          : null,
-      },
+    return apiSuccess({
+      tasks: cloudTasks.map(mapTask),
+      stats: cloudStats ? mapStats(cloudStats) : null,
     });
   } catch (error) {
-    console.error("[api/sync]", error);
-    return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
+    return handleApiError("api/sync", error);
   }
 }

@@ -1,70 +1,45 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db/connection";
 import { tasks as tasksSchema } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import {
+  apiSuccess,
+  handleApiError,
+  dbNotConfiguredResponse,
+  unauthorizedResponse,
+  requireUser,
+  badRequestResponse,
+  mapTask,
+} from "../auth/shared";
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    const user = await requireUser();
+    if (!user) return unauthorizedResponse();
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json(
-        { success: false, error: "Database not configured" },
-        { status: 503 },
-      );
-    }
+    if (!db) return dbNotConfiguredResponse();
 
     const rows = await db.select().from(tasksSchema).where(eq(tasksSchema.userId, user.id));
-
-    const data = rows.map((r) => ({
-      id: r.taskId,
-      title: r.title,
-      completed: r.completed ?? false,
-      priority: r.priority as "LOW" | "MEDIUM" | "HIGH",
-      category: r.category ?? "",
-      pollenUnits: r.pollenUnits ?? 1,
-      columnId: r.columnId as "todo" | "in_progress" | "completed",
-      notes: r.notes ?? undefined,
-      dueDate: r.dueDate ?? undefined,
-    }));
-
-    return NextResponse.json({ success: true, data });
+    return apiSuccess(rows.map(mapTask));
   } catch (error) {
-    console.error("[api/tasks]", error);
-    return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
+    return handleApiError("api/tasks", error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    const user = await requireUser();
+    if (!user) return unauthorizedResponse();
 
     const body = await request.json();
     const { taskId, title, completed, priority, category, pollenUnits, columnId, notes, dueDate } =
       body;
 
-    if (!taskId || !title) {
-      return NextResponse.json(
-        { success: false, error: "taskId and title are required" },
-        { status: 400 },
-      );
-    }
+    if (!taskId || !title) return badRequestResponse("taskId and title are required");
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json(
-        { success: false, error: "Database not configured" },
-        { status: 503 },
-      );
-    }
+    if (!db) return dbNotConfiguredResponse();
 
     await db.insert(tasksSchema).values({
       userId: user.id,
@@ -79,100 +54,64 @@ export async function POST(request: NextRequest) {
       dueDate: dueDate ?? null,
     });
 
-    return NextResponse.json({ success: true, data: { taskId } });
+    return apiSuccess({ taskId }, 201);
   } catch (error) {
-    console.error("[api/tasks]", error);
-    return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
+    return handleApiError("api/tasks", error);
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    const user = await requireUser();
+    if (!user) return unauthorizedResponse();
 
     const body = await request.json();
     const { taskId, ...updates } = body;
-
-    if (!taskId) {
-      return NextResponse.json({ success: false, error: "taskId is required" }, { status: 400 });
-    }
+    if (!taskId) return badRequestResponse("taskId is required");
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json(
-        { success: false, error: "Database not configured" },
-        { status: 503 },
-      );
-    }
+    if (!db) return dbNotConfiguredResponse();
 
     const allowedFields = [
-      "title",
-      "completed",
-      "priority",
-      "category",
-      "pollenUnits",
-      "columnId",
-      "notes",
-      "dueDate",
-    ];
+      "title", "completed", "priority", "category",
+      "pollenUnits", "columnId", "notes", "dueDate",
+    ] as const;
     const updateData: Record<string, unknown> = {};
     for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        updateData[field] = updates[field];
-      }
+      if (updates[field] !== undefined) updateData[field] = updates[field];
     }
 
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ success: false, error: "No fields to update" }, { status: 400 });
-    }
+    if (Object.keys(updateData).length === 0) return badRequestResponse("No fields to update");
 
     await db
       .update(tasksSchema)
       .set(updateData)
       .where(and(eq(tasksSchema.userId, user.id), eq(tasksSchema.taskId, taskId)));
 
-    return NextResponse.json({ success: true, data: { taskId } });
+    return apiSuccess({ taskId });
   } catch (error) {
-    console.error("[api/tasks]", error);
-    return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
+    return handleApiError("api/tasks", error);
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    const user = await requireUser();
+    if (!user) return unauthorizedResponse();
 
     const { searchParams } = new URL(request.url);
     const taskId = searchParams.get("taskId");
-
-    if (!taskId) {
-      return NextResponse.json(
-        { success: false, error: "taskId query param is required" },
-        { status: 400 },
-      );
-    }
+    if (!taskId) return badRequestResponse("taskId query param is required");
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json(
-        { success: false, error: "Database not configured" },
-        { status: 503 },
-      );
-    }
+    if (!db) return dbNotConfiguredResponse();
 
     await db
       .delete(tasksSchema)
       .where(and(eq(tasksSchema.userId, user.id), eq(tasksSchema.taskId, taskId)));
 
-    return NextResponse.json({ success: true, data: null });
+    return apiSuccess(null);
   } catch (error) {
-    console.error("[api/tasks]", error);
-    return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
+    return handleApiError("api/tasks", error);
   }
 }

@@ -1,11 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
-import { getDb, getDbError } from "@/lib/db/connection";
+import { eq } from "drizzle-orm";
+import { getDb } from "@/lib/db/connection";
 import { users } from "@/lib/db/schema";
 import { hashPassword, createSession, setSessionCookie } from "@/lib/auth";
 import { validatePassword } from "@/lib/password-validation";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { eq } from "drizzle-orm";
+import {
+  apiSuccess,
+  apiError,
+  handleApiError,
+  rateLimitedResponse,
+  validationErrorResponse,
+  dbNotConfiguredResponse,
+  weakPasswordResponse,
+} from "../shared";
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,149 +31,55 @@ const registerSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const result = checkRateLimit(ip, 5, 60 * 1000);
-    if (!result.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "RATE_LIMITED",
-            message: "Too many attempts. Try again later.",
-          },
-        },
-        { status: 429 },
-      );
-    }
+    if (!checkRateLimit(ip, 5, 60 * 1000).allowed) return rateLimitedResponse();
 
     const body = await request.json();
     const parsed = registerSchema.safeParse(body);
-
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "VALIDATION_ERROR",
-            message: parsed.error.errors.map((e) => e.message).join(", "),
-          },
-        },
-        { status: 400 },
-      );
+      return validationErrorResponse(parsed.error.errors.map((e) => e.message).join(", "));
     }
 
     const { email, username, name, lastName, password } = parsed.data;
 
     const pwCheck = validatePassword(password);
-    if (!pwCheck.valid) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "WEAK_PASSWORD",
-            message: `Password must include: ${pwCheck.errors.join(", ")}`,
-          },
-        },
-        { status: 400 },
-      );
-    }
+    if (!pwCheck.valid) return weakPasswordResponse(pwCheck.errors);
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "DB_NOT_CONFIGURED",
-            message: "Database connection not available",
-          },
-        },
-        { status: 503 },
-      );
-    }
+    if (!db) return dbNotConfiguredResponse();
 
     const [existingEmail] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-
-    if (existingEmail) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "EMAIL_TAKEN",
-            message: "An account with this email already exists",
-          },
-        },
-        { status: 409 },
-      );
-    }
+    if (existingEmail) return apiError(409, "EMAIL_TAKEN", "An account with this email already exists");
 
     const [existingUsername] = await db
       .select()
       .from(users)
       .where(eq(users.username, username))
       .limit(1);
-
-    if (existingUsername) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "USERNAME_TAKEN",
-            message: "This username is already taken",
-          },
-        },
-        { status: 409 },
-      );
-    }
+    if (existingUsername) return apiError(409, "USERNAME_TAKEN", "This username is already taken");
 
     const passwordHash = await hashPassword(password);
-
     const [inserted] = await db
       .insert(users)
       .values({ email, username, name, lastName, passwordHash })
       .returning();
-
-    if (!inserted) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: "CREATE_FAILED", message: "Failed to create user" },
-        },
-        { status: 500 },
-      );
-    }
+    if (!inserted) return apiError(500, "CREATE_FAILED", "Failed to create user");
 
     const token = await createSession(inserted.id);
     await setSessionCookie(token);
 
-    return NextResponse.json(
+    return apiSuccess(
       {
-        success: true,
-        data: {
-          user: {
-            id: inserted.id,
-            email: inserted.email,
-            username: inserted.username,
-            name: inserted.name,
-            lastName: inserted.lastName,
-          },
+        user: {
+          id: inserted.id,
+          email: inserted.email,
+          username: inserted.username,
+          name: inserted.name,
+          lastName: inserted.lastName,
         },
       },
-      { status: 201 },
+      201,
     );
   } catch (error) {
-    console.error("[auth/register]", error);
-    const dbErr = getDbError();
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: dbErr
-            ? `Database error: ${dbErr}`
-            : "An unexpected error occurred",
-        },
-      },
-      { status: 500 },
-    );
+    return handleApiError("auth/register", error);
   }
 }

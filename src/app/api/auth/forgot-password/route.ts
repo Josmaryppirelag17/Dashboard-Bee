@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { createPasswordResetToken } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { getDbError } from "@/lib/db/connection";
+import {
+  apiSuccess,
+  apiError,
+  handleApiError,
+  rateLimitedResponse,
+  validationErrorResponse,
+} from "../shared";
 
 const schema = z.object({
   email: z.string().email().max(255),
@@ -11,54 +17,17 @@ const schema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const rateLimit = checkRateLimit(ip, 3, 60 * 1000);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "RATE_LIMITED",
-            message: "Too many attempts. Try again later.",
-          },
-        },
-        { status: 429 },
-      );
-    }
+    if (!checkRateLimit(ip, 3, 60 * 1000).allowed) return rateLimitedResponse();
 
     const body = await request.json();
     const parsed = schema.safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: { code: "VALIDATION_ERROR", message: "Invalid email address" } },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return validationErrorResponse("Invalid email address");
 
     const result = await createPasswordResetToken(parsed.data.email);
+    if (!result.success) return apiError(404, "NOT_FOUND", result.error);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: { code: "NOT_FOUND", message: result.error } },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ success: true, data: { resetUrl: result.resetUrl } });
+    return apiSuccess({ resetUrl: result.resetUrl });
   } catch (error) {
-    console.error("[auth/forgot-password]", error);
-    const dbErr = getDbError();
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: dbErr
-            ? `Database error: ${dbErr}`
-            : "An unexpected error occurred",
-        },
-      },
-      { status: 500 },
-    );
+    return handleApiError("auth/forgot-password", error);
   }
 }

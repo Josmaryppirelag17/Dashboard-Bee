@@ -1,10 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
-import { getDb, getDbError } from "@/lib/db/connection";
+import { eq, or } from "drizzle-orm";
+import { getDb } from "@/lib/db/connection";
 import { users } from "@/lib/db/schema";
 import { verifyPassword, createSession, setSessionCookie } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { eq, or } from "drizzle-orm";
+import {
+  apiSuccess,
+  apiError,
+  handleApiError,
+  rateLimitedResponse,
+  validationErrorResponse,
+  dbNotConfiguredResponse,
+} from "../shared";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email or username is required"),
@@ -14,114 +22,41 @@ const loginSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const result = checkRateLimit(ip, 5, 15 * 60 * 1000);
-    if (!result.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "RATE_LIMITED",
-            message: "Too many attempts. Try again later.",
-          },
-        },
-        { status: 429 },
-      );
-    }
+    if (!checkRateLimit(ip, 5, 15 * 60 * 1000).allowed) return rateLimitedResponse();
 
     const body = await request.json();
     const parsed = loginSchema.safeParse(body);
-
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "VALIDATION_ERROR",
-            message: parsed.error.errors.map((e) => e.message).join(", "),
-          },
-        },
-        { status: 400 },
-      );
+      return validationErrorResponse(parsed.error.errors.map((e) => e.message).join(", "));
     }
 
     const { email, password } = parsed.data;
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "DB_NOT_CONFIGURED",
-            message: "Database connection not available",
-          },
-        },
-        { status: 503 },
-      );
-    }
+    if (!db) return dbNotConfiguredResponse();
 
     const [user] = await db
       .select()
       .from(users)
       .where(or(eq(users.email, email), eq(users.username, email)))
       .limit(1);
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "INVALID_CREDENTIALS",
-            message: "Invalid email/username or password",
-          },
-        },
-        { status: 401 },
-      );
-    }
-
-    const valid = await verifyPassword(password, user.passwordHash);
-    if (!valid) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "INVALID_CREDENTIALS",
-            message: "Invalid email/username or password",
-          },
-        },
-        { status: 401 },
-      );
+    if (!user || !(await verifyPassword(password, user.passwordHash))) {
+      return apiError(401, "INVALID_CREDENTIALS", "Invalid email/username or password");
     }
 
     const token = await createSession(user.id);
     await setSessionCookie(token);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          name: user.name,
-          lastName: user.lastName,
-        },
+    return apiSuccess({
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
+        lastName: user.lastName,
       },
     });
   } catch (error) {
-    console.error("[auth/login]", error);
-    const dbErr = getDbError();
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: dbErr
-            ? `Database error: ${dbErr}`
-            : "An unexpected error occurred",
-        },
-      },
-      { status: 500 },
-    );
+    return handleApiError("auth/login", error);
   }
 }
