@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createPasswordResetToken } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { getDbError } from "@/lib/db/connection";
 
 const schema = z.object({
   email: z.string().email().max(255),
@@ -46,10 +47,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: { resetUrl: result.resetUrl } });
   } catch (error) {
     console.error("[auth/forgot-password]", error);
+    const dbErr = getDbError();
     return NextResponse.json(
       {
         success: false,
-        error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" },
+        error: {
+          code: "INTERNAL_ERROR",
+          message: dbErr
+            ? `Database error: ${dbErr}`
+            : "An unexpected error occurred",
+        },
       },
       { status: 500 },
     );

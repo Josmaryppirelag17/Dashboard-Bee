@@ -22,7 +22,11 @@
 [![CI](https://github.com/Josmaryppirelag17/Dashboard-Bee/actions/workflows/test.yml/badge.svg)](https://github.com/Josmaryppirelag17/Dashboard-Bee/actions/workflows/test.yml)
 [![Deploy](https://github.com/Josmaryppirelag17/Dashboard-Bee/actions/workflows/deploy.yml/badge.svg)](https://github.com/Josmaryppirelag17/Dashboard-Bee/actions/workflows/deploy.yml)
 [![Accessibility](https://img.shields.io/badge/a11y-role%2Fprogressbar%2Fskip--to--content-brightgreen)]()
-[![SonarQube](https://img.shields.io/badge/lint-SonarQube%20scanner-4B9BD2)]()
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Josmaryppirelag17_Dashboard-Bee&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Josmaryppirelag17_Dashboard-Bee)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Josmaryppirelag17_Dashboard-Bee&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Josmaryppirelag17_Dashboard-Bee)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Josmaryppirelag17_Dashboard-Bee&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Josmaryppirelag17_Dashboard-Bee)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Josmaryppirelag17_Dashboard-Bee&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Josmaryppirelag17_Dashboard-Bee)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Josmaryppirelag17_Dashboard-Bee&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=Josmaryppirelag17_Dashboard-Bee)
 
 ![OG Image](public/og-image.svg)
 

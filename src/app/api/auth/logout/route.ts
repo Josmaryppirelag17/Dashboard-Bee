@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionToken, deleteSession, clearSessionCookie } from "@/lib/auth";
+import { getDbError } from "@/lib/db/connection";
 
 export async function POST() {
   try {
@@ -17,12 +18,15 @@ export async function POST() {
     });
   } catch (error) {
     console.error("[auth/logout]", error);
+    const dbErr = getDbError();
     return NextResponse.json(
       {
         success: false,
         error: {
           code: "INTERNAL_ERROR",
-          message: "An unexpected error occurred",
+          message: dbErr
+            ? `Database error: ${dbErr}`
+            : "An unexpected error occurred",
         },
       },
       { status: 500 },

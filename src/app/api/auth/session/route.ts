@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getDbError } from "@/lib/db/connection";
 
 export async function GET() {
   try {
@@ -27,12 +28,15 @@ export async function GET() {
     });
   } catch (error) {
     console.error("[auth/session]", error);
+    const dbErr = getDbError();
     return NextResponse.json(
       {
         success: false,
         error: {
           code: "INTERNAL_ERROR",
-          message: "An unexpected error occurred",
+          message: dbErr
+            ? `Database error: ${dbErr}`
+            : "An unexpected error occurred",
         },
       },
       { status: 500 },

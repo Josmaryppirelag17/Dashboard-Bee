@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
@@ -7,9 +7,16 @@ import Providers from "./Providers";
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#e28800",
+};
 
 export const metadata: Metadata = {
   title: {
@@ -21,6 +28,11 @@ export const metadata: Metadata = {
   applicationName: "BeeHive",
   metadataBase: new URL(siteUrl),
   alternates: { canonical: "/" },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
   openGraph: {
     title: "BeeHive - Dashboard de Productividad",
     description: "Organiza tus tareas con BeeHive Productivity — Pomodoro, Kanban y gamificación.",
@@ -52,10 +64,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="es" nonce={nonce}>
-      <head>
-        <meta name="theme-color" content="#e28800" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </head>
       <body className={`${inter.className} bg-[#faf6ee] text-[#100f0d] antialiased`}>
         <a
           href="#main-content"

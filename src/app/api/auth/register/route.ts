@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getDb } from "@/lib/db/connection";
+import { getDb, getDbError } from "@/lib/db/connection";
 import { users } from "@/lib/db/schema";
 import { hashPassword, createSession, setSessionCookie } from "@/lib/auth";
 import { validatePassword } from "@/lib/password-validation";
@@ -153,12 +153,15 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("[auth/register]", error);
+    const dbErr = getDbError();
     return NextResponse.json(
       {
         success: false,
         error: {
           code: "INTERNAL_ERROR",
-          message: "An unexpected error occurred",
+          message: dbErr
+            ? `Database error: ${dbErr}`
+            : "An unexpected error occurred",
         },
       },
       { status: 500 },

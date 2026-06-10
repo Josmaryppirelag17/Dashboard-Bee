@@ -16,6 +16,10 @@
     "preflight": "pnpm typecheck && pnpm lint && pnpm test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
     "audit:observatory": "echo 'Visita https://observatory.mozilla.org y analiza tu URL desplegada'",
     "audit:all": "pnpm typecheck && pnpm test && pnpm build",
     "sonar": "sonar-scanner"
