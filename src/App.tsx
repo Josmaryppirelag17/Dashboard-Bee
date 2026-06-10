@@ -524,8 +524,8 @@ export default function App() {
                   up your Hive. Randomize bee personas anytime in the lower profile dashboard.
                 </li>
                 <li>
-                  <strong>CSV Backups</strong>: Safeguard your tasks via "Export CSV" and restore
-                  datasets fluidly anytime through the newly integrated "Import CSV" module!
+                  <strong>CSV Backups</strong>: Safeguard your tasks via <strong>Export CSV</strong> and restore
+                  datasets fluidly anytime through the newly integrated <strong>Import CSV</strong> module!
                 </li>
                 <li>
                   <strong>Core Metrics</strong>: Real-time monitoring of your status through
@@ -558,8 +558,8 @@ export default function App() {
                   subir de nivel. Modifica tu nombre de abeja en la parte inferior cuando gustes.
                 </li>
                 <li>
-                  <strong>Backups de Datos</strong>: Guarda tus labores vía "Exportar CSV" y
-                  restáuralas en cualquier momento con el nuevo cargador "Importar CSV" del panel
+                  <strong>Backups de Datos</strong>: Guarda tus labores vía <strong>Exportar CSV</strong> y
+                  restáuralas en cualquier momento con el nuevo cargador <strong>Importar CSV</strong> del panel
                   general.
                 </li>
                 <li>

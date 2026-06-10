@@ -51,5 +51,5 @@ export function useHiveProjection(customDailyPace: number = 1.5) {
       remainingDays,
       advice,
     };
-  }, [tasks, customDailyPace]);
+  }, [tasks, customDailyPace, language]);
 }
